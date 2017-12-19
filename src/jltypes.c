@@ -2003,18 +2003,18 @@ void jl_init_types(void) JL_GC_DISABLED
                         jl_svec(1, jl_any_type), 0, 0, 0);
     jl_detachnode_type =
         jl_new_datatype(jl_symbol("DetachNode"), core, jl_any_type, jl_emptysvec,
-                        jl_perm_symsvec(1, "label"),
-                        jl_svec(1, jl_long_type), 0, 0, 1);
+                        jl_perm_symsvec(2, "label", "syncregion"),
+                        jl_svec(2, jl_long_type, jl_long_type), 0, 0, 1);
 
     jl_reattachnode_type =
         jl_new_datatype(jl_symbol("ReattachNode"), core, jl_any_type, jl_emptysvec,
-                        jl_perm_symsvec(1, "label"),
-                        jl_svec(1, jl_long_type), 0, 0, 1);
+                        jl_perm_symsvec(2, "label", "syncregion"),
+                        jl_svec(2, jl_long_type, jl_long_type), 0, 0, 1);
 
     jl_syncnode_type =
         jl_new_datatype(jl_symbol("SyncNode"), core, jl_any_type, jl_emptysvec,
-                        jl_perm_symsvec(1, "label"),
-                        jl_svec(1, jl_long_type), 0, 0, 1);
+                        jl_perm_symsvec(2, "label", "syncregion"),
+                        jl_svec(2, jl_long_type, jl_long_type), 0, 0, 1);
 
     jl_quotenode_type =
         jl_new_datatype(jl_symbol("QuoteNode"), core, jl_any_type, jl_emptysvec,
