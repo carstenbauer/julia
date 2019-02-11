@@ -2224,3 +2224,10 @@ _call_rttf_test() = Core.Compiler.return_type(_rttf_test, Tuple{Any})
 f_with_Type_arg(::Type{T}) where {T} = T
 @test Base.return_types(f_with_Type_arg, (Any,)) == Any[Type]
 @test Base.return_types(f_with_Type_arg, (Type{Vector{T}} where T,)) == Any[Type{Vector{T}} where T]
+
+# Test that we don't limit recursions on the number of arguments, even if the
+# arguments themselves are getting more complex
+f_incr(x::Tuple, y::Tuple, args...) = f_incr((x, y), args...)
+f_incr(x::Tuple) = x
+@test @inferred(f_incr((), (), (), (), (), (), (), ())) ==
+    ((((((((), ()), ()), ()), ()), ()), ()), ())
