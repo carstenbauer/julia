@@ -2019,8 +2019,7 @@ void jl_init_types(void) JL_GC_DISABLED
 
     jl_syncregionnode_type =
         jl_new_datatype(jl_symbol("SyncregionNode"), core, jl_any_type, jl_emptysvec,
-                        jl_perm_symsvec(0),
-                        jl_svec(0), 0, 0, 1);
+                        jl_emptysvec, jl_emptysvec, 0, 0, 0);
 
     jl_quotenode_type =
         jl_new_datatype(jl_symbol("QuoteNode"), core, jl_any_type, jl_emptysvec,
