@@ -61,7 +61,7 @@ jl_sym_t *macrocall_sym;  jl_sym_t *colon_sym;
 jl_sym_t *hygienicscope_sym; jl_sym_t *escape_sym;
 jl_sym_t *gc_preserve_begin_sym; jl_sym_t *gc_preserve_end_sym;
 jl_sym_t *throw_undef_if_not_sym; jl_sym_t *getfield_undefref_sym;
-jl_sym_t *detach_sym; jl_sym_t *reattach_sym; jl_sym_t *sync_sym;
+jl_sym_t *detach_sym; jl_sym_t *reattach_sym; jl_sym_t *sync_sym; jl_sym_t *syncregion_sym;
 
 static uint8_t flisp_system_image[] = {
 #include <julia_flisp.boot.inc>
@@ -368,6 +368,7 @@ void jl_init_frontend(void)
     do_sym = jl_symbol("do");
     detach_sym = jl_symbol("detach");
     reattach_sym = jl_symbol("reattach");
+    syncregion_sym = jl_symbol("syncregion");
     sync_sym = jl_symbol("sync");
 }
 
@@ -541,6 +542,10 @@ static jl_value_t *scm_to_julia_(fl_context_t *fl_ctx, value_t e, jl_module_t *m
         else if (sym == sync_sym) {
             ex = scm_to_julia_(fl_ctx, car_(e), mod);
             temp = jl_new_struct(jl_syncnode_type, ex);
+        }
+        else if (sym == syncregion_sym) {
+            ex = scm_to_julia_(fl_ctx, car_(e), mod);
+            temp = jl_new_struct(jl_syncregionnode_type, ex);
         }
         else if (sym == newvar_sym) {
             ex = scm_to_julia_(fl_ctx, car_(e), mod);
@@ -747,6 +752,8 @@ static value_t julia_to_scm_(fl_context_t *fl_ctx, jl_value_t *v)
         return julia_to_list2_noalloc(fl_ctx, (jl_value_t*)reattach_sym, jl_fieldref(v,0));
     if (jl_typeis(v, jl_syncnode_type))
         return julia_to_list2_noalloc(fl_ctx, (jl_value_t*)sync_sym, jl_fieldref(v,0));
+    if (jl_typeis(v, jl_syncregionnode_type))
+        return julia_to_list2_noalloc(fl_ctx, (jl_value_t*)syncregion_sym, jl_fieldref(v,0));
     if (jl_typeis(v, jl_quotenode_type))
         return julia_to_list2(fl_ctx, (jl_value_t*)inert_sym, jl_fieldref_noalloc(v,0));
     if (jl_typeis(v, jl_newvarnode_type))
