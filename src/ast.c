@@ -544,8 +544,7 @@ static jl_value_t *scm_to_julia_(fl_context_t *fl_ctx, value_t e, jl_module_t *m
             temp = jl_new_struct(jl_syncnode_type, ex);
         }
         else if (sym == syncregion_sym) {
-            ex = scm_to_julia_(fl_ctx, car_(e), mod);
-            temp = jl_new_struct(jl_syncregionnode_type, ex);
+            temp = jl_new_struct(jl_syncregionnode_type);
         }
         else if (sym == newvar_sym) {
             ex = scm_to_julia_(fl_ctx, car_(e), mod);
