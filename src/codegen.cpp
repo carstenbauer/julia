@@ -5325,7 +5325,6 @@ static std::unique_ptr<Module> emit_function(
     //jl_static_show(JL_STDOUT, (jl_value_t*)ast);
     //jl_printf(JL_STDOUT, "\n");
     std::map<int, BasicBlock*> labels;
-    std::map<int, Value*> syncregions;
     ctx.module = jl_is_method(lam->def.method) ? lam->def.method->module : lam->def.module;
     ctx.linfo = lam;
     ctx.source = src;
@@ -6014,17 +6013,6 @@ static std::unique_ptr<Module> emit_function(
         cursor = -1;
     };
 
-#ifdef USE_TAPIR
-    auto get_syncregion = [&] (int sr) {
-        auto &srval = syncregions[sr];
-        // check if already has been created
-        if (!srval) {
-            srval = emit_syncregion(ctx);
-        }
-        return srval;
-    };
-#endif
-
     auto do_coverage = [&] (bool in_user_code) {
         return (coverage_mode == JL_LOG_ALL ||
                 (coverage_mode == JL_LOG_USER && in_user_code));
@@ -6266,13 +6254,13 @@ static std::unique_ptr<Module> emit_function(
             continue;
         }
         if (jl_is_detachnode(stmt)) {
-            int lsyncregion = jl_syncregion_label(stmt);
-            int lname = jl_gotonode_label(stmt);
-            Value *syncregion = get_syncregion(lsyncregion);
-            BasicBlock *label = BasicBlock::Create(jl_LLVMContext, "TODO"); // TODO: get continue label
-            BasicBlock *entry = BasicBlock::Create(jl_LLVMContext, "pfor.body.entry");
-            ctx.builder.CreateDetach(entry, label, syncregion);
-            ctx.builder.SetInsertPoint(entry);
+            // int lsyncregion = jl_syncregion_label(stmt);
+            // int lname = jl_gotonode_label(stmt);
+            // Value *syncregion = get_syncregion(lsyncregion);
+            // BasicBlock *label = BasicBlock::Create(jl_LLVMContext, "TODO"); // TODO: get continue label
+            // BasicBlock *entry = BasicBlock::Create(jl_LLVMContext, "pfor.body.entry");
+            // ctx.builder.CreateDetach(entry, label, syncregion);
+            // ctx.builder.SetInsertPoint(entry);
             // CreateDetach(BasicBlock *Detached, BasicBlock *Continue,
             //              Value *SyncRegion
             // IIUC:
@@ -6281,19 +6269,25 @@ static std::unique_ptr<Module> emit_function(
             continue;
         }
         if (jl_is_reattachnode(stmt)) {
-            int lsyncregion = jl_syncregion_label(stmt);
-            int lname = jl_gotonode_label(stmt);
-            Value *syncregion = get_syncregion(lsyncregion);
-            BasicBlock *label = BasicBlock::Create(jl_LLVMContext, "TODO"); // TODO: get continue label
-            ctx.builder.CreateReattach(label, syncregion);
+            // int lsyncregion = jl_syncregion_label(stmt);
+            // int lname = jl_gotonode_label(stmt);
+            // Value *syncregion = get_syncregion(lsyncregion);
+            // BasicBlock *label = BasicBlock::Create(jl_LLVMContext, "TODO"); // TODO: get continue label
+            // ctx.builder.CreateReattach(label, syncregion);
             // CreateReattach(BasicBlock *DetachContinue, Value *SyncRegion)
             continue;
         }
         if (jl_is_syncnode(stmt)) {
-            int lsr = jl_syncregion_label(stmt);
-            Value *sr = get_syncregion(lsr);
+            ??? ex = jl_syncregion_label(stmt);
+            Value* syncregion;
+            if (jl_is_ssavalue(ex)) {
+                ssize_t idx = ((jl_ssavalue_t*)ex)->id - 1;
+                assert(idx >= 0);
+                assert(ctx.ssavalue_assigned.at(idx));
+                syncregion = ctx.SAvalues.at(idx).Value;
+            }
             BasicBlock *continueBlock = BasicBlock::Create(jl_LLVMContext, "sync.continue");
-            ctx.builder.CreateSync(continueBlock, sr);
+            ctx.builder.CreateSync(continueBlock, syncregion);
             ctx.builder.SetInsertPoint(continueBlock);
             continue;
         }
