@@ -1027,18 +1027,6 @@ void jl_dump_compiles(void *s)
     dump_compiles_stream = (JL_STREAM*)s;
 }
 
-// --- tapir utilities ---
-#ifdef USE_TAPIR
-Value *emit_syncregion(jl_codectx_t &ctx) {
-    // Start of the sync region. To ensure the syncregion.start call
-    // dominates all uses of the generated token, we insert this call at the alloca
-    // insertion point.
-    Function *func = Intrinsic::getDeclaration(ctx.f->getParent(), Intrinsic::syncregion_start);
-    Value *SRStart = CallInst::Create(func, "syncreg", &(ctx.f->getEntryBlock()));
-    return SRStart;
-}
-#endif
-
 // --- entry point ---
 //static int n_emit=0;
 static std::unique_ptr<Module> emit_function(
@@ -6268,7 +6256,15 @@ static std::unique_ptr<Module> emit_function(
             find_next_stmt(cursor + 1);
             continue;
         }
-#ifdef USE_TAPIR
+        if (jl_is_syncregionnode(stmt)) {
+            Function *func = Intrinsic::getDeclaration(ctx.f->getParent(), Intrinsic::syncregion_start);
+            Value *SRStart = CallInst::Create(func, "syncreg", &(ctx.f->getEntryBlock()));
+            assert(!ctx.ssavalue_assigned.at(cursor));
+            ctx.SAvalues.at(cursor) = jl_cgval_t(SRStart, NULL, false, // token type
+                                                 (jl_value_t*)jl_ulong_type, NULL);
+            ctx.ssavalue_assigned.at(cursor) = true;
+            continue;
+        }
         if (jl_is_detachnode(stmt)) {
             int lsyncregion = jl_syncregion_label(stmt);
             int lname = jl_gotonode_label(stmt);
@@ -6302,7 +6298,7 @@ static std::unique_ptr<Module> emit_function(
             continue;
         }
 #else
-        if(jl_is_detachnode(stmt) || jl_is_reattachnode(stmt) || jl_is_syncnode(stmt)) {
+        if(jl_is_detachnode(stmt) || jl_is_reattachnode(stmt) || jl_is_syncnode(stmt) || jl_is_syncregionnode(stmt)) {
             continue;
         }
 #endif
